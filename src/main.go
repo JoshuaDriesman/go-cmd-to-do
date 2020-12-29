@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 var todoList = make(map[string]bool)
@@ -90,6 +92,8 @@ func promptAndRead() {
 	for {
 		fmt.Print("Enter a command (type 'h' for a list of commands): ")
 
+		in := bufio.NewReader(os.Stdin)
+
 		var command string
 
 		_, err := fmt.Scanln(&command)
@@ -99,11 +103,11 @@ func promptAndRead() {
 		switch command {
 		case "a":
 			fmt.Print("Please enter the task you'd like to add to your to do list: ")
-			var newTodo string
 
-			_, err := fmt.Scanln(&newTodo)
+			newTodo, err := in.ReadString('\n')
 			checkAndHandleError(err)
 
+			newTodo = strings.Trim(newTodo, "\n")
 			addTodo(newTodo)
 		case "l":
 			listTodo()
