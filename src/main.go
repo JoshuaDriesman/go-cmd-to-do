@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"database/sql"
 	"errors"
 	"fmt"
 	"os"
@@ -19,19 +20,11 @@ func checkAndHandleError(err error) {
 	return
 }
 
-func addTodo(newTodo string) {
-	_, present := todoList[newTodo]
-	if present {
-		fmt.Println("To do item already exists in list! Please add another.")
-		return
-	}
-	todoList[newTodo] = false
-}
-
-func listTodo() {
-	for todo, status := range todoList {
-		fmt.Printf("%s: ", todo)
-		if status {
+func listTodo(database *sql.DB) {
+	tl := GetTodos(database)
+	for _, todo := range *tl {
+		fmt.Printf("%s: ", todo.title)
+		if todo.done {
 			fmt.Print("Completed\n")
 		} else {
 			fmt.Print("Incomplete\n")
@@ -70,13 +63,20 @@ func selectTodo() (string, error) {
 	return enumeratedTodoItems[intIndexOfTodoToToggle], nil
 }
 
-func toggleTodo() {
+func toggleTodo(database *sql.DB) {
 	fmt.Println("Enter which to do item you'd like to toggle?")
-	itemToToggle, err := selectTodo()
-	if err != nil {
-		return
+	todos := GetTodos(database)
+	for _, todo := range *todos {
+		fmt.Println("%d: %s", todo.id, todo.title)
 	}
-	todoList[itemToToggle] = !todoList[itemToToggle]
+
+	var input string
+	fmt.Scanln(&input)
+
+	num, _ := strconv.Atoi(input)
+
+	ToggleTodo(num, database)
+
 }
 
 func deleteTodo() {
@@ -88,7 +88,7 @@ func deleteTodo() {
 	delete(todoList, itemToDelete)
 }
 
-func promptAndRead() {
+func promptAndRead(database *sql.DB) {
 	for {
 		fmt.Print("Enter a command (type 'h' for a list of commands): ")
 
@@ -108,11 +108,11 @@ func promptAndRead() {
 			checkAndHandleError(err)
 
 			newTodo = strings.Trim(newTodo, "\n")
-			addTodo(newTodo)
+			InsertTodo(newTodo, database)
 		case "l":
-			listTodo()
+			listTodo(database)
 		case "t":
-			toggleTodo()
+			toggleTodo(database)
 		case "d":
 			deleteTodo()
 		case "h":
@@ -133,5 +133,6 @@ func promptAndRead() {
 
 func main() {
 	fmt.Println("Welcome to GO To Do!")
-	promptAndRead()
+	database := Setup()
+	promptAndRead(database)
 }
